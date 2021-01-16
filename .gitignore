@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Credentials
+config/api-key.txt
+
+# Local tests for messing around
+test/localtests.py
+
+# IntelliJ
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/tasks.xml
+.idea/shelf
