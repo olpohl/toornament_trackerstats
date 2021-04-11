@@ -1,7 +1,6 @@
 import unittest
-from toornament import *
 from trackernetwork import *
-
+import toornament
 
 # For reference purposes:
 # class TestStringMethods(unittest.TestCase):
