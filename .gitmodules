@@ -1,3 +1,3 @@
-[submodule "lib/Toornament.com-API"]
-	path = lib/Toornament.com-API
-	url = https://github.com/cubrink/Toornament.com-API
+[submodule "lib/toornament"]
+	path = lib/toornament
+	url = https://github.com/niborus/toornament
