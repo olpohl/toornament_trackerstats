@@ -5,13 +5,13 @@ import json
 
 # Contains functions to access trackernetwork.com to scrape player data like MMR
 
-#f = open("../config/api-key-trn", "r")
+#f = open("../config/api-key-toornament-trn", "r")
 #api_key_trn = f.readline()
 
 trn_api_url = "https://public-api.tracker.gg/v2/rocket-league/standard/profile"
 season_url = "segments/playlist?season="  # Add season-number to this
 
-
+# TODO: let Player_TRN inherit from toornament.ParticipantPlayer?
 class Player:
     def __init__(self, name='-', steam_id='-', xbox_id='-', psn_id='-', nintendo_id='-', epic_id='-', best_id='-'):
         self.name = name

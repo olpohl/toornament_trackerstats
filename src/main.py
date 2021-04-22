@@ -6,10 +6,10 @@ import csv
 tournament_id = "4396607322092011520"  # 4396607322092011520 = Uniliga Sommer 2021
 season = 17
 
-f = open("../config/api-key-toornament", "r")
+f = open("../config/api-key-toornament-toornament", "r")
 api_key_toornament = f.readline()
 
-f = open("../config/api-key-trn", "r")
+f = open("../config/api-key-toornament-trn", "r")
 api_key_trn = f.readline()
 
 toornament_api = toornament.SyncViewerAPI(api_key_toornament)
