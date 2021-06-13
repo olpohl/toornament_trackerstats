@@ -1,9 +1,11 @@
-import os
-import platform
 import requests
 import json
 
 # Contains functions to access trackernetwork.com to scrape player data like MMR
+#
+# INFO (11.06.21):
+# TRN appears to have deactivated the public API for Rocket League.
+# This means that the https-access methods defined here do not work anymore (403)
 
 #f = open("../config/api-key-toornament-trn", "r")
 #api_key_trn = f.readline()
@@ -11,28 +13,40 @@ import json
 trn_api_url = "https://public-api.tracker.gg/v2/rocket-league/standard/profile"
 season_url = "segments/playlist?season="  # Add season-number to this
 
-# TODO: let Player_TRN inherit from toornament.ParticipantPlayer?
+
 class Player:
-    def __init__(self, name='-', steam_id='-', xbox_id='-', psn_id='-', nintendo_id='-', epic_id='-', best_id='-'):
+    def __init__(self, name='-', steam_id='-', xbox_id='-', psn_id='-', nintendo_id='-', epic_id='-', best_id=None):
         self.name = name
+        self.steam_id = None  # IDs are initialized with none and updated with set_ids down below
+        self.xbox_id = None
+        self.psn_id = None
+        self.nintendo_id = None
+        self.epic_id = None
         self.best_id = None
         self.best_platform = None
         self.stats = {"mmr_1v1": "-", "mmr_2v2": "-", "mmr_3v3": "-"}
         self.all_ids = dict()
         self.set_ids(steam_id, xbox_id, psn_id, nintendo_id, epic_id, best_id)
 
-    def set_ids(self, steam_id='-', xbox_id='-', psn_id='-', nintendo_id='-', epic_id='-', best_id='-'):
+    # Sets a player's IDs and determines best ID and platform
+    def set_ids(self, steam_id='-', xbox_id='-', psn_id='-', nintendo_id='-', epic_id='-', best_platform=None):
+        self.steam_id = steam_id
+        self.xbox_id = xbox_id
+        self.psn_id = psn_id
+        self.nintendo_id = nintendo_id
+        self.epic_id = epic_id
         self.all_ids["steam"] = steam_id
         self.all_ids["xbox"] = xbox_id
         self.all_ids["psn"] = psn_id
         self.all_ids["nintendo"] = nintendo_id
         self.all_ids["epic"] = epic_id
-        if best_id != '-':
-            self.determine_best_id()
+        if best_platform == 'steam' or best_platform == 'xbox' or best_platform == 'psn' or best_platform == 'nintendo' or best_platform == 'epic':
+            self.best_platform = best_platform
+            self.best_id = self.all_ids[best_platform]
         else:
-            self.best_id = best_id
-            self.best_platform = '-'
+            self.determine_best_id()
 
+    # Determines the best ID of a player, ie. the ID that should be used for scraping data
     def determine_best_id(self):
         # If Steam-ID is available for this player, this should be used. If not, use another ID available.
         if len(self.steam_id) > 4:
@@ -61,15 +75,18 @@ class Player:
         self.stats = trn_api.get_playerstats(self, season)
 
 
-class Trackernet_api():
+class TrackernetAPI:
     def __init__(self, api_key_trn):
         self.api_key_trn = api_key_trn
 
+    # Get a player's stats like MMR from TRN
+    # As of today (June '21), TRN does not support RL with their API so this does not work
     def get_playerstats(self, player, season=17):
         if (player.best_platform != '-') & (player.best_id != '-'):
             url = f"{trn_api_url}/{player.best_platform}/{player.best_id}/{season_url}{str(season)}"
             print(f"Scraping player MMR for {player.name}")
-            req = requests.get(url, headers={"TRN-Api-Key": self.api_key_trn})
+            print(f"URL: {url}")
+            req = requests.get(url, headers={"TRN-Api-Key": self.api_key_trn})  # TODO: RL public API deactivated...
             if req.status_code == 200:
                 stats_dict_list = json.loads(req.content.decode('utf-8'))['data']
 
@@ -111,7 +128,7 @@ class Trackernet_api():
                 # stats_tournaments = data_tournaments['stats']
 
             else:
-                print(f'Bad request! Response was{str(req.status_code)}')
+                print(f'Bad request! Response was {str(req.status_code)}')
 
         else:
             print(f"No valid player ID found for {player.name}")
