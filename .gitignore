@@ -130,6 +130,9 @@ dmypy.json
 
 # Credentials
 config/api-key.txt
+config/api-key-toornament
+config/api-key-trn
+config/apidata.json
 
 # Local tests for messing around
 test/localtests.py
