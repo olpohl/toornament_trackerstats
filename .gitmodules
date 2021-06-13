@@ -1,0 +1,3 @@
+[submodule "lib/toornament"]
+	path = lib/toornament
+	url = https://github.com/niborus/toornament

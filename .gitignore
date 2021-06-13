@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/
@@ -109,6 +109,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venv_py/
 
 # Spyder project settings
 .spyderproject
@@ -129,9 +130,7 @@ dmypy.json
 .pyre/
 
 # Credentials
-config/api-key.txt
-config/api-key-toornament
-config/api-key-trn
+config/api-key*
 config/apidata.json
 
 # Local tests for messing around
@@ -142,3 +141,7 @@ test/localtests.py
 .idea/usage.statistics.xml
 .idea/tasks.xml
 .idea/shelf
+
+# Output files
+output/*.csv
+output/*.xls*
