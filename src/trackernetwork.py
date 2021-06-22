@@ -3,6 +3,9 @@ import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.by import By
 import os
 import platform
 import lxml
@@ -52,7 +55,7 @@ class Player:
         self.best_id = None
         self.best_platform = None
         self.trn_webscrape_url = None
-        self.stats = {"mmr_1v1": "-", "mmr_2v2": "-", "mmr_3v3": "-"}
+        self.stats = {"mmr_1v1": -1, "mmr_2v2": -1, "mmr_3v3": -1}
         self.all_ids = dict()
         self.set_ids(steam_id, xbox_id, psn_id, nintendo_id, epic_id, best_id)
 
@@ -112,20 +115,28 @@ class Player:
         driver.get(self.trn_webscrape_url)
 
         # Extract Players data
+        time.sleep(10)  # TODO: change this to webdriver wait
+        #driver.implicitly_wait(10)
         content = driver.page_source  # TODO: implement timeout, wait for updated data
-        driver.implicitly_wait(5)
+        #wait = WebDriverWait(driver, 10)
+        #loaded = wait.until(ec.visibility_of_element_located((By.XPATH, "//a[@data-tracking-id='men']")))
         soup = BeautifulSoup(content, features="html.parser")
-        trn_table_soup = soup.find('table', attrs={'class': 'trn-table'})
-        playlists_soup = trn_table_soup.findAll('div', attrs={'class': 'playlist'})
-        ratings_soup = trn_table_soup.findAll('div', attrs={'class': 'mmr'})
+        #trn_table_soup = soup.find('table', attrs={'class': 'trn-table'})
+        #playlists_soup = trn_table_soup.findAll('div', attrs={'class': 'playlist'})
+        playlists_soup = soup.findAll('div', attrs={'class': 'playlist'})
+        ratings_soup = soup.findAll('div', attrs={'class': 'mmr'})
         for i in range(len(playlists_soup)):
-            if playlists_soup[i].text == 'Ranked Duel 1v1':
-                self.stats["mmr_1v1"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
-            if playlists_soup[i].text == 'Ranked Doubles 2v2':
-                self.stats["mmr_2v2"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
-            if playlists_soup[i].text == 'Ranked Standard 3v3':
-                self.stats["mmr_3v3"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
+            if playlists_soup[i].text == 'Ranked Duel 1v1 ':
+                self.stats["mmr_1v1"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                print("Ranked Duel 1v1: " + str(self.stats["mmr_1v1"]) + " MMR")
+            if playlists_soup[i].text == 'Ranked Doubles 2v2 ':
+                self.stats["mmr_2v2"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                print("Ranked Doubles 2v2: " + str(self.stats["mmr_2v2"]) + " MMR")
+            if playlists_soup[i].text == 'Ranked Standard 3v3 ':
+                self.stats["mmr_3v3"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                print("Ranked Standard 3v3: " + str(self.stats["mmr_3v3"]) + " MMR")
             # TODO: add class 'matches' for nr of matches
+        return self.stats
 
         # Oduvanchic's version:
         # playerpage = requests.get(self.trn_webscrape_url, timeout=(10))
