@@ -1,5 +1,14 @@
 import requests
 import json
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import os
+import platform
+import lxml
+from urllib.parse import urljoin
+import re
+import time
 
 # Contains functions to access trackernetwork.com to scrape player data like MMR
 #
@@ -9,9 +18,27 @@ import json
 
 #f = open("../config/api-key-toornament-trn", "r")
 #api_key_trn = f.readline()
-
 trn_api_url = "https://public-api.tracker.gg/v2/rocket-league/standard/profile"
 season_url = "segments/playlist?season="  # Add season-number to this
+
+# Get directory path and chromedriver.exe
+dir_parent_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+operating_system = platform.system()
+print('OS found: ' + operating_system)
+if operating_system == 'Windows':
+    cd_path = dir_parent_path.replace('\\', '/') + '/lib/chromedriver/chromedriver.exe'
+    driver = webdriver.Chrome(executable_path=cd_path)
+    #cd_path = dir_parent_path.replace('\\', '/') + '/lib/chromedriver/phantomjs-2.1.1-windows/bin/phantomjs.exe'
+    #driver = webdriver.PhantomJS(executable_path=cd_path)
+elif operating_system == 'Linux':
+    chrome_options = Options()
+    #chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    cd_path = dir_parent_path.replace('\\', '/') + '/lib/chromedriver/chromedriver'
+    driver = webdriver.Chrome(executable_path=cd_path,  chrome_options=chrome_options)
+    #cd_path = dir_parent_path.replace('\\', '/') + '/lib/chromedriver/phantomjs-2.1.1-windows/bin/phantomjs.exe'
+    #driver = webdriver.PhantomJS(executable_path=cd_path)
 
 
 class Player:
@@ -24,6 +51,7 @@ class Player:
         self.epic_id = None
         self.best_id = None
         self.best_platform = None
+        self.trn_webscrape_url = None
         self.stats = {"mmr_1v1": "-", "mmr_2v2": "-", "mmr_3v3": "-"}
         self.all_ids = dict()
         self.set_ids(steam_id, xbox_id, psn_id, nintendo_id, epic_id, best_id)
@@ -59,20 +87,66 @@ class Player:
             self.best_platform = "xbox"
             self.best_id = self.xbox_id
         elif self.psn_id != '-' and self.psn_id != 'n/a' and self.psn_id != '/':
-            self.best_platform = "psn"
+            self.best_platform = "ps"
             self.best_id = self.psn_id
         elif self.nintendo_id != '-' and self.nintendo_id != 'n/a' and self.nintendo_id != '/':
-            self.best_platform = "nintendo"
+            self.best_platform = "ps"
             self.best_id = self.psn_id
         else:
             self.best_platform = '-'
             self.best_id = '-'
+            self.trn_webscrape_url = '-'
             print(f"Player {self.name} has no valid ID!")
             return False
+        self.trn_webscrape_url = f"https://rocketleague.tracker.network/rocket-league/profile/{self.best_platform}/{self.best_id}/overview"
         return True
 
     def get_stats(self, trn_api, season=17):
         self.stats = trn_api.get_playerstats(self, season)
+
+    def webscrape_stats(self, season=17):
+        # TODO: test this
+        # TODO: implement season
+        print("Scraping player MMR for " + self.name + " with url " + self.trn_webscrape_url)
+        # Open TRN-Player-Website
+        driver.get(self.trn_webscrape_url)
+
+        # Extract Players data
+        content = driver.page_source  # TODO: implement timeout, wait for updated data
+        driver.implicitly_wait(5)
+        soup = BeautifulSoup(content, features="html.parser")
+        trn_table_soup = soup.find('table', attrs={'class': 'trn-table'})
+        playlists_soup = trn_table_soup.findAll('div', attrs={'class': 'playlist'})
+        ratings_soup = trn_table_soup.findAll('div', attrs={'class': 'mmr'})
+        for i in range(len(playlists_soup)):
+            if playlists_soup[i].text == 'Ranked Duel 1v1':
+                self.stats["mmr_1v1"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
+            if playlists_soup[i].text == 'Ranked Doubles 2v2':
+                self.stats["mmr_2v2"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
+            if playlists_soup[i].text == 'Ranked Standard 3v3':
+                self.stats["mmr_3v3"] = ratings_soup[i].find('div', attrs={'class': 'value'}).value
+            # TODO: add class 'matches' for nr of matches
+
+        # Oduvanchic's version:
+        # playerpage = requests.get(self.trn_webscrape_url, timeout=(10))
+        # psoup = BeautifulSoup(playerpage.text, "lxml")
+        # playlists = psoup.find_all("div", class_="playlist")
+        # ratings = psoup.find_all("div", class_="mmr")
+        # for i in range(len(playlists)):
+        #     pname = playlists[i].text
+        #     pname = re.sub(r'\W+', '', pname)
+        #     if pname == "RankedDuel1v1":
+        #         self.stats["mmr_1v1"] = ratings[i].text
+        #         #v1 = ratings[i].text
+        #     if pname == "RankedDoubles2v2":
+        #         self.stats["mmr_2v2"] = ratings[i].text
+        #         #v1 = v1.replace(",", "")
+        #         #v2 = ratings[i].text
+        #         #v2 = v2.replace(",", "")
+        #     if pname == "RankedStandard3v3":
+        #         self.stats["mmr_3v3"] = ratings[i].text
+        #         #v3 = ratings[i].text
+        #         #v3 = v3.replace(",", "")
 
 
 class TrackernetAPI:

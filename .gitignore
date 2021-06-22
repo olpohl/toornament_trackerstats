@@ -145,3 +145,6 @@ test/localtests.py
 # Output files
 output/*.csv
 output/*.xls*
+
+# binaries
+*.exe

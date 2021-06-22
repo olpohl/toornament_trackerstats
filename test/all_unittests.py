@@ -2,7 +2,6 @@ import unittest
 #from trackernetwork import *
 import toornament
 import csv
-
 import trackernetwork
 from trackernetwork import *
 
@@ -63,13 +62,30 @@ if get_and_show_all:  # not needed for unit testing, but could be interesting no
 
 class TestToornamentAPI(unittest.TestCase):
     def test_toornament_data(self):
-        self.assertEqual(my_tournament.name, "Uniliga Sommer RL 21")
+        self.assertEqual(my_tournament.name, "Uniliga RL Sommer 21")
         self.assertEqual(my_tournament.size, 93)
         self.assertEqual(len(my_stages), 8)
 
 
-class TestTrackerAPI(unittest.TestCase):
-    def test_get_playerstats(self):
+# class TestTrackerAPI(unittest.TestCase):  # Currently TRN API is deactivated
+#     def test_get_playerstats(self):
+#         test_playername = 'BonsaiBrudi'
+#         test_teamname = 'UED'
+#         test_steam_id = '76561197970707838'
+#         test_epic_id = '-'
+#         test_xbox_id = '-'
+#         test_psn_id = '-'
+#         test_nintendo_id = '-'
+#         test_season = 16
+#         test_player = trackernetwork.Player(name=test_playername, steam_id=test_steam_id)
+#         stats = trn_api.get_playerstats(test_player, season=test_season)
+#         self.assertEqual(stats['mmr_1v1'], 1004)
+#         self.assertEqual(stats['mmr_2v2'], 1472)
+#         self.assertEqual(stats['mmr_3v3'], 1351)
+
+
+class TestManualWebscraping(unittest.TestCase):  # TODO: test this
+    def test_webscrape(self):
         test_playername = 'BonsaiBrudi'
         test_teamname = 'UED'
         test_steam_id = '76561197970707838'
@@ -79,10 +95,10 @@ class TestTrackerAPI(unittest.TestCase):
         test_nintendo_id = '-'
         test_season = 16
         test_player = trackernetwork.Player(name=test_playername, steam_id=test_steam_id)
-        stats = trn_api.get_playerstats(test_player, season=test_season)
-        self.assertEqual(stats['mmr_1v1'], 1004)
-        self.assertEqual(stats['mmr_2v2'], 1472)
-        self.assertEqual(stats['mmr_3v3'], 1351)
+        stats = test_player.webscrape_stats(season=test_season)
+        self.assertEqual(stats['mmr_1v1'], 1026)  # TODO: needs to be adjusted to current values for every test
+        self.assertEqual(stats['mmr_2v2'], 1291)
+        self.assertEqual(stats['mmr_3v3'], 1282)
 
 
 if __name__ == '__main__':
