@@ -10,7 +10,7 @@ from trackernetwork import *
 # https://www.toornament.com/en_GB/tournaments/3356365864224243712/stages/
 tournament_id = "4396607322092011520"  # 4396607322092011520 = Uniliga Sommer 2021
 season = 17
-get_and_show_all = False  # if true: gets all tournament data and displays in terminal
+get_and_show_all = True  # if true: gets all tournament data and displays in terminal
 
 # Activate APIs
 f = open("../config/api-key-toornament", "r")
@@ -42,20 +42,21 @@ if get_and_show_all:  # not needed for unit testing, but could be interesting no
                 print('\n---------------------')
                 print(the_group.name)
                 for the_team in group_teams:
-                    print('\n' + the_team.name)
-                    for the_player in the_team.lineup:
-                        steam_id = the_player.custom_fields['steam_id']
-                        xbox_id = the_player.custom_fields['xbox_live_gamertag']
-                        psn_id = the_player.custom_fields['psn_id']
-                        nintendo_id = the_player.custom_fields['nintendo_network_id']
-                        epic_id = the_player.custom_fields['epic_id']
+                    if the_team.name == 'Uni Vechta Aquarobic Ultras':
+                        print('\n' + the_team.name)
+                        for the_player in the_team.lineup:
+                            steam_id = the_player.custom_fields['steam_id']
+                            xbox_id = the_player.custom_fields['xbox_live_gamertag']
+                            psn_id = the_player.custom_fields['psn_id']
+                            nintendo_id = the_player.custom_fields['nintendo_network_id']
+                            epic_id = the_player.custom_fields['epic_id']
 
-                        print(the_player.name)
-                        #print(the_player.custom_fields['steam_id'])
-                        #print(the_player.custom_fields['xbox_live_gamertag'])
-                        #print(the_player.custom_fields['psn_id'])
-                        #print(the_player.custom_fields['nintendo_network_id'])
-                        #print(the_player.custom_fields['epic_id'])
+                            print(the_player.name)
+                            #print(the_player.custom_fields['steam_id'])
+                            #print(the_player.custom_fields['xbox_live_gamertag'])
+                            #print(the_player.custom_fields['psn_id'])
+                            #print(the_player.custom_fields['nintendo_network_id'])
+                            #print(the_player.custom_fields['epic_id'])
         elif the_stage.type == 'double_elimination' or the_stage.type == 'single_elimination':
             print('...omitting tree stage...')  # TODO: read tree stages as well
 
@@ -93,12 +94,33 @@ class TestManualWebscraping(unittest.TestCase):  # TODO: test this
         test_xbox_id = '-'
         test_psn_id = '-'
         test_nintendo_id = '-'
-        test_season = 16
+        test_season = 17
         test_player = trackernetwork.Player(name=test_playername, steam_id=test_steam_id)
         stats = test_player.webscrape_stats(season=test_season)
+        self.assertTrue(stats['success'])
         self.assertEqual(stats['mmr_1v1'], 1026)  # TODO: needs to be adjusted to current values for every test
         self.assertEqual(stats['mmr_2v2'], 1291)
-        self.assertEqual(stats['mmr_3v3'], 1282)
+        self.assertEqual(stats['mmr_3v3'], 1283)
+
+    def test_webscrape_fail(self):
+        test_playername = 'Crave0209'
+        test_teamname = 'HSW Enkelkinder'
+        test_steam_id = '76561197960287930'
+        test_epic_id = '-'
+        test_xbox_id = '-'
+        test_psn_id = '-'
+        test_nintendo_id = '-'
+        test_season = 17
+        test_player = trackernetwork.Player(name=test_playername, steam_id=test_steam_id)
+        stats = test_player.webscrape_stats(season=test_season)
+        self.assertFalse(stats['success'])
+        self.assertEqual(stats['mmr_1v1'], -1)
+        self.assertEqual(stats['mmr_2v2'], -1)
+        self.assertEqual(stats['mmr_3v3'], -1)
+        count_failed_scrapes = 0
+        print(count_failed_scrapes)
+        count_failed_scrapes += not stats['success']
+        print(count_failed_scrapes)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 import os
 import platform
 import lxml
@@ -80,19 +81,19 @@ class Player:
     # Determines the best ID of a player, ie. the ID that should be used for scraping data
     def determine_best_id(self):
         # If Steam-ID is available for this player, this should be used. If not, use another ID available.
-        if len(self.steam_id) > 4:
+        if (self.steam_id is not None) and (len(self.steam_id) > 4):
             self.best_platform = "steam"
             self.best_id = self.steam_id
-        elif self.epic_id != '-' and self.epic_id != 'n/a' and self.epic_id != '/':
+        elif self.epic_id is not None and self.epic_id != '-' and self.epic_id != 'n/a' and self.epic_id != '/':
             self.best_platform = "epic"
             self.best_id = self.epic_id
-        elif self.xbox_id != '-' and self.xbox_id != 'n/a' and self.xbox_id != '/':
+        elif self.xbox_id is not None and self.xbox_id != '-' and self.xbox_id != 'n/a' and self.xbox_id != '/':
             self.best_platform = "xbox"
             self.best_id = self.xbox_id
-        elif self.psn_id != '-' and self.psn_id != 'n/a' and self.psn_id != '/':
+        elif self.psn_id is not None and self.psn_id != '-' and self.psn_id != 'n/a' and self.psn_id != '/':
             self.best_platform = "ps"
             self.best_id = self.psn_id
-        elif self.nintendo_id != '-' and self.nintendo_id != 'n/a' and self.nintendo_id != '/':
+        elif self.nintendo_id is not None and self.nintendo_id != '-' and self.nintendo_id != 'n/a' and self.nintendo_id != '/':
             self.best_platform = "ps"
             self.best_id = self.psn_id
         else:
@@ -108,34 +109,44 @@ class Player:
         self.stats = trn_api.get_playerstats(self, season)
 
     def webscrape_stats(self, season=17):
-        # TODO: test this
         # TODO: implement season
-        print("Scraping player MMR for " + self.name + " with url " + self.trn_webscrape_url)
-        # Open TRN-Player-Website
-        driver.get(self.trn_webscrape_url)
+        season_string = f"S{season - 14} ({season})"
+        print(f"Scraping player MMR for {self.name} with url {self.trn_webscrape_url} and season {season_string}")
+        self.stats['1v1'] = -1
+        self.stats['2v2'] = -1
+        self.stats['3v3'] = -1
+        self.stats['success'] = False
 
-        # Extract Players data
-        time.sleep(10)  # TODO: change this to webdriver wait
-        #driver.implicitly_wait(10)
-        content = driver.page_source  # TODO: implement timeout, wait for updated data
-        #wait = WebDriverWait(driver, 10)
-        #loaded = wait.until(ec.visibility_of_element_located((By.XPATH, "//a[@data-tracking-id='men']")))
-        soup = BeautifulSoup(content, features="html.parser")
-        #trn_table_soup = soup.find('table', attrs={'class': 'trn-table'})
-        #playlists_soup = trn_table_soup.findAll('div', attrs={'class': 'playlist'})
-        playlists_soup = soup.findAll('div', attrs={'class': 'playlist'})
-        ratings_soup = soup.findAll('div', attrs={'class': 'mmr'})
-        for i in range(len(playlists_soup)):
-            if playlists_soup[i].text == 'Ranked Duel 1v1 ':
-                self.stats["mmr_1v1"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
-                print("Ranked Duel 1v1: " + str(self.stats["mmr_1v1"]) + " MMR")
-            if playlists_soup[i].text == 'Ranked Doubles 2v2 ':
-                self.stats["mmr_2v2"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
-                print("Ranked Doubles 2v2: " + str(self.stats["mmr_2v2"]) + " MMR")
-            if playlists_soup[i].text == 'Ranked Standard 3v3 ':
-                self.stats["mmr_3v3"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
-                print("Ranked Standard 3v3: " + str(self.stats["mmr_3v3"]) + " MMR")
-            # TODO: add class 'matches' for nr of matches
+        try:
+            # Open TRN-Player-Website
+            driver.get(self.trn_webscrape_url)
+
+            # Extract Players data
+            wait = WebDriverWait(driver, 15)
+            if ('404 - Not Found' in driver.title) or (len(driver.find_elements_by_class_name('error-message')) > 0):
+                print('Catch did not work! 404 or error message occured!')
+            else:
+                wait.until(ec.visibility_of_element_located((By.CLASS_NAME, 'trn-table')))
+                #season_btn = driver.find_element(By.CLASS_NAME, 'multi-switch__item multi-switch__item--selected')
+                #season_btn.click()
+                content = driver.page_source
+                soup = BeautifulSoup(content, features="html.parser")
+                playlists_soup = soup.findAll('div', attrs={'class': 'playlist'})
+                ratings_soup = soup.findAll('div', attrs={'class': 'mmr'})
+                for i in range(len(playlists_soup)):
+                    if '1v1' in playlists_soup[i].text:
+                        self.stats["mmr_1v1"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                        print("Ranked Duel 1v1: " + str(self.stats["mmr_1v1"]) + " MMR")
+                    if '2v2' in playlists_soup[i].text:
+                        self.stats["mmr_2v2"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                        print("Ranked Doubles 2v2: " + str(self.stats["mmr_2v2"]) + " MMR")
+                    if '3v3' in playlists_soup[i].text:
+                        self.stats["mmr_3v3"] = int(ratings_soup[i].text.replace(',', '').replace(' ', ''))
+                        print("Ranked Standard 3v3: " + str(self.stats["mmr_3v3"]) + " MMR")
+                    # TODO: add div class and 'matches' for nr of matches
+                self.stats['success'] = True
+        except TimeoutException as e:
+            print("Page load Timeout Occured... Moving to next Player.")
         return self.stats
 
         # Oduvanchic's version:

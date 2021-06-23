@@ -11,10 +11,11 @@ season = 17
 # Activate APIs
 f = open("../config/api-key-toornament", "r")
 api_key_toornament = f.read().splitlines()[0]
-f = open("../config/api-key-trn", "r")
-api_key_trn = f.read().splitlines()[0]
 toornament_api = toornament.SyncViewerAPI(api_key_toornament)
-trn_api = trackernetwork.TrackernetAPI(api_key_trn)
+# TRN-API currently deactivated for RL :(
+#f = open("../config/api-key-trn", "r")
+#api_key_trn = f.read().splitlines()[0]
+#trn_api = trackernetwork.TrackernetAPI(api_key_trn)
 
 # Get basic tournament data from toornament (tournament, stages, groups, divisions, teams, players)
 my_tournament = toornament_api.get_tournament(tournament_id)
@@ -22,6 +23,8 @@ my_tournament = toornament_api.get_tournament(tournament_id)
 # Get stages data
 my_stages = toornament_api.get_stages(tournament_id)
 stages = []
+
+count_failed_scrapes = 0
 
 # Go through: stages -> groups -> teams -> players and write player data into csv file
 for the_stage in my_stages:
@@ -69,10 +72,12 @@ for the_stage in my_stages:
                     #print(the_player.custom_fields['nintendo_network_id'])
                     #print(the_player.custom_fields['epic_id'])
 
-                    stats = {"mmr_1v1": 0, "mmr_2v2": 0, "mmr_3v3": 0}
-                    #trn_player = trackernetwork.Player(the_player.name, steam_id, xbox_id, psn_id, nintendo_id, epic_id)
+                    trn_player = trackernetwork.Player(the_player.name, steam_id, xbox_id, psn_id, nintendo_id, epic_id)
                     #stats = trn_api.get_playerstats(trn_player, season)  # TRN-API for RL deactivated atm
                     # TODO: webscraping without API...
+                    stats = trn_player.webscrape_stats(season=season)
+
+                    count_failed_scrapes += not stats['success']
 
                     player = {"name": the_player.name,
                               "IDs": {"steam_id": steam_id,
